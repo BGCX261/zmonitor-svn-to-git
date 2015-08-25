@@ -1,0 +1,79 @@
+#summary This document is a user guide of how to use ZMonitor in your Java web application.
+#labels Featured
+
+= Introduction =
+
+ZMonitor can helps you monitoring every request's call stack history in a very detailed way by leveraging your Log4j declarations in your application.
+for more detail of how to configure LOG4J
+
+
+
+== Steps ==
+  * put zmonitor.jar into your /WEB_INF/lib
+  * give ZMonitor Filter declaration in */WEB_INF/web.xml*
+  * Create */WEB-INF/zmonitor.xml* and configure it.
+  * _(optional)_ Use ZMonitorAppender in your application.
+
+== /WEB-INF/web.xml Configuration ==
+you have to add a filter in your web.xml to make ZMonitor can do interception, please copy & paste the declaration bellow:
+{{{
+  <filter>
+  	<filter-name>zMonitor</filter-name>
+  	<filter-class>org.zkoss.monitor.web.ZMonitorServletFilter</filter-class>
+  </filter>
+  <filter-mapping>
+  	<filter-name>zMonitor</filter-name>
+  	<url-pattern>/*</url-pattern>
+  </filter-mapping> 
+}}}
+
+A ZMonitor instance will create and start up while _ServletFilter::init(FilterConfig) throws ServletException_ been called by server.
+
+
+== zmonitor.xml Configuration ==
+
+A normal zmonitor.xml will looks like this:
+{{{
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<zmonitor >
+	
+	<timeline-handler name="console-LOG4J" 
+		class="org.zkoss.monitor.handler.ToStringTimelineHandler"/>
+
+	<servlet-container-conf>
+		<url-filer rule="not" mode="or">
+			<condition match="endWith" pattern=".dsp" />
+			<condition match="contains" pattern="/images/" />
+			<condition match="endWith" pattern=".css" />
+			<condition match="endWith" pattern=".wcs" />
+			<condition match="endWith" pattern=".wpd" />
+			<condition match="endWith" pattern=".html" />
+			<condition match="endWith" pattern=".htm" />
+			<condition match="endWith" pattern=".js" />
+			<condition match="endWith" pattern=".png" />
+			<condition match="endWith" pattern=".jpg" />
+			<condition match="endWith" pattern=".gif" />
+			<condition match="endWith" pattern=".txt" />
+		</url-filer>
+	</servlet-container-conf>
+</zmonitor>
+}}}
+As you can see, the major configuration in ZMonitor is about to determine what kind of request should be monitored by giving *url-filter* and *condition* declarations.
+
+A *url-filter* has 2 properties: _mode_ and _rule_:
+ * _mode_, can only be "or" or "and", is used to define how the filter go over these conditions.
+ * _rule_, to decorate the returning result of condition evaluations, set to "not" will return false if value is true, vice-versa.
+A *condition* has three fields to let you configure:
+ * _rule_, can only be "not" for now. if you want to test if the current request URL is NOT matching this condition.
+ * _match_, could be "endWith", "contains" and "matches", for the first two you just give a normal String to pattern, for "matches" you need to give a Regular Expression to pattern.
+ * _pattern_ a String value that the condition will use.
+
+A _black list_ style configuration will be looks like this:
+{{{
+<condition rule="not" match="endWith" pattern=".css" />
+<condition rule="not" match="endWith" pattern=".js" />
+}}}
+This configuration will block every request which URL is ends with .css or .js.
+
+if you'd much prefer a _white list_ style of filter condition
